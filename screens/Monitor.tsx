@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Dimensions, StyleSheet, Text, ScrollView, Button } from 'react-native';
+import { View, Dimensions, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import MqttService from '../mqtt/mqttService.js';
 
@@ -133,9 +133,15 @@ function Monitor() {
           />
         </View>
         <View style={styles.buttonContainer}>
-          <Button title={pumpState ? "Turn Pump Off" : "Turn Pump On"} onPress={togglePumpState} />
-          <Button title={fanState ? "Turn Fan Off" : "Turn Fan On"} onPress={toggleFanState} />
-          <Button title={lightState ? "Turn Light Off" : "Turn Light On"} onPress={toggleLightState} />
+          <TouchableOpacity style={[styles.button, pumpState ? styles.activeButton : null]} onPress={togglePumpState}>
+            <Text style={styles.buttonText}>{pumpState ? "Turn Pump Off" : "Turn Pump On"}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, fanState ? styles.activeButton : null]} onPress={toggleFanState}>
+            <Text style={styles.buttonText}>{fanState ? "Turn Fan Off" : "Turn Fan On"}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, lightState ? styles.activeButton : null]} onPress={toggleLightState}>
+            <Text style={styles.buttonText}>{lightState ? "Turn Light Off" : "Turn Light On"}</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -172,10 +178,24 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingVertical: 10,
+  },
+  button: {
+    backgroundColor: '#DDDDDD',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+    width: screenWidth * 0.9,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+  },
+  activeButton: {
+    backgroundColor: '#90EE90', // Green color when active
   },
 });
 
