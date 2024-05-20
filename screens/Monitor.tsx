@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Dimensions, StyleSheet, Text} from 'react-native';
+import { View, Dimensions, StyleSheet, Text, ScrollView, Button } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import MqttService from '../mqtt/mqttService.js';
 
@@ -23,6 +23,9 @@ function Monitor() {
   const [chartTemperature, setChartTemperature] = React.useState(data);
   const [chartHumidity, setChartHumidity] = React.useState(data);
   const [timeStamps, setTimeStamps] = React.useState([]);
+  const [pumpState, setPumpState] = React.useState(false);
+  const [fanState, setFanState] = React.useState(false);
+  const [lightState, setLightState] = React.useState(false);
 
   React.useEffect(() => {
     const onDataReceived = (topic : any, payload : any) => {
@@ -31,18 +34,15 @@ function Monitor() {
       if (topic === 'esp/temp') {
         setTemperature(payload);
         setChartTemperature(prevData => {
-          // Copy previous data
           const newLabels = [...prevData.labels];
           const newData = [...prevData.datasets[0].data];
   
-          // Push new data
           newLabels.push(time);
           newData.push(payload);
   
-          // Check if number of data points exceeds 10, remove the first one
-          if (newLabels.length > 10) {
-            newLabels.shift(); // Remove first label
-            newData.shift(); // Remove first data point
+          if (newLabels.length > 9) {
+            newLabels.shift();
+            newData.shift();
           }
   
           return {
@@ -53,18 +53,15 @@ function Monitor() {
       } else {
         setHumidity(payload);
         setChartHumidity(prevData => {
-          // Copy previous data
           const newLabels = [...prevData.labels];
           const newData = [...prevData.datasets[0].data];
   
-          // Push new data
           newLabels.push(time);
           newData.push(payload);
   
-          // Check if number of data points exceeds 10, remove the first one
-          if (newLabels.length > 10) {
-            newLabels.shift(); // Remove first label
-            newData.shift(); // Remove first data point
+          if (newLabels.length > 9) {
+            newLabels.shift();
+            newData.shift();
           }
   
           return {
@@ -73,12 +70,12 @@ function Monitor() {
           };
         });
       }
-      console.log(topic, payload)
     };
     mqttService.connect(() => {
       console.log('Connected to MQTT broker');
       mqttService.subscribeTopic("esp/temp");
       mqttService.subscribeTopic("esp/hum");
+
       mqttService.onMessageArrived(onDataReceived);
     });
 
@@ -86,37 +83,64 @@ function Monitor() {
       mqttService.disconnect();
     };
   }, []);
-  
+
+  const publishMessage = (topic : any, message : any) => {
+    mqttService.sendMessage(topic, message);
+    console.log(topic, message)
+  };
+
+  const togglePumpState = () => {
+    const newState = !pumpState;
+    setPumpState(newState);
+    publishMessage("esp/onoffpump", newState ? "on" : "off");
+  };
+
+  const toggleFanState = () => {
+    const newState = !fanState;
+    setFanState(newState);
+    publishMessage("esp/onofffan", newState ? "on" : "off");
+  };
+
+  const toggleLightState = () => {
+    const newState = !lightState;
+    setLightState(newState);
+    publishMessage("esp/onofflight", newState ? "on" : "off");
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Temperature</Text>
-        {/* <Text>Temperature: {temperature}</Text> */}
-        <LineChart
-          data={chartTemperature} // Use new state for chart data
-          width={screenWidth * 0.9}
-          height={screenHeight * 0.3}
-          chartConfig={chartConfig}
-          bezier
-          style={styles.chart}
-        />
-      </View>
-      <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Humidity</Text>
-        <LineChart
-          data={chartHumidity} // Use new state for chart data
-          width={screenWidth * 0.9}
-          height={screenHeight * 0.3}
-          chartConfig={chartConfig}
-          bezier
-          style={styles.chart}
-        />
-      </View>
+      <ScrollView>
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>Temperature</Text>
+          <LineChart
+            data={chartTemperature}
+            width={screenWidth * 0.9}
+            height={screenHeight * 0.3}
+            chartConfig={chartConfig}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>Humidity</Text>
+          <LineChart
+            data={chartHumidity}
+            width={screenWidth * 0.9}
+            height={screenHeight * 0.3}
+            chartConfig={chartConfig}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+        <View style={styles.buttonContainer}>
+          <Button title={pumpState ? "Turn Pump Off" : "Turn Pump On"} onPress={togglePumpState} />
+          <Button title={fanState ? "Turn Fan Off" : "Turn Fan On"} onPress={toggleFanState} />
+          <Button title={lightState ? "Turn Light Off" : "Turn Light On"} onPress={toggleLightState} />
+        </View>
+      </ScrollView>
     </View>
   );
 }
-
 
 const chartConfig = {
   backgroundColor: '#ffffff',
@@ -131,12 +155,12 @@ const chartConfig = {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 2,
+    flex: 1,
   },
   chartContainer: {
-    flex: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
   },
   chartTitle: {
     fontSize: 20,
@@ -147,11 +171,12 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 16,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
 });
 
 export default Monitor;
-
-function setChartData(newData: { labels: string[]; datasets: { data: number[]; }[]; }) {
-  throw new Error('Function not implemented.');
-}
-

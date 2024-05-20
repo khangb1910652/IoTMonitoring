@@ -81,7 +81,7 @@ class MqttService {
   };
 
   sendMessage = (topic, payload) => {
-    let message = new Paho.MQTT.Message(payload);
+    let message = new Paho.MQTT.Message(payload.toString());
     message.destinationName = topic;
     this.client.send(message);
   };
