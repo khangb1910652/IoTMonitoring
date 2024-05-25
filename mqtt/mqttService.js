@@ -12,7 +12,7 @@ init({
 const options = {
   // host: "broker.emqx.io", 
   // port: 8083
-  host: "broker.hivemq.com", 
+  host: "13.229.134.198", 
   port: 8000
   // host: "18.141.55.45",
   // port: 8000
