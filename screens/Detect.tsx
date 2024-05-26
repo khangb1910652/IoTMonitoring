@@ -1,11 +1,12 @@
-// TabScreen2.tsx
 import React, { useCallback, useState } from 'react';
 import { View, Text, Button, Image, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
-// import * as Tflite from 'react-native-tflite-classification';
+import axios from 'axios';
+// import * as BottomSheet from '@rneui/themed'
 
 function Detect() {
   const [imageSource, setImageSource] = useState<string | null>(null);
+  const [prediction, setPrediction] = useState<string | null>(null);
 
   const openImagePicker = useCallback(() => {
     const options = {
@@ -27,9 +28,32 @@ function Detect() {
         // Get the first selected image and set it as the image source
         const selectedImage = response.assets[0];
         setImageSource(selectedImage.uri as any);
+        // Call function to send image to server for prediction
+        sendImage(selectedImage.uri as any);
       }
     });
   }, []);
+
+  const sendImage = async (imageUri: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: imageUri.split("/").pop(),
+      });
+      
+      const response = await axios.post('http://18.143.158.39:8000/predict/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      console.log(response.data.prediction)
+      setPrediction(response.data.prediction);
+    } catch (error) {
+      console.error('Error sending image:', error);
+    }
+  };
 
   const openCamera = useCallback(() => {
     const options = {
@@ -51,6 +75,8 @@ function Detect() {
         if (response.assets && response.assets.length > 0) {
           const selectedImage = response.assets[0];
           setImageSource(selectedImage.uri as any);
+          // Call function to send image to server for prediction
+          sendImage(selectedImage.uri as any);
         }
       }
     });
@@ -58,7 +84,9 @@ function Detect() {
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      {imageSource && <Image source={{ uri: imageSource }} style={{ width: 200, height: 200 }} />}
+      {imageSource && <Image source={{ uri: imageSource }} style={{ width: 200, height: 200, padding: 20}} />}
+      <Text style={{ color: 'black'}}>Prediction: {prediction}</Text>
+      
       <TouchableOpacity onPress={openImagePicker}>
         <View style={{ backgroundColor: 'blue', padding: 10, borderRadius: 5, marginBottom: 10 }}>
           <Text style={{ color: 'white' }}>Select Image</Text>
