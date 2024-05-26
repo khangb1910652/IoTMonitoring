@@ -2,13 +2,14 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, Button, Image, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
 import axios from 'axios';
-// import * as BottomSheet from '@rneui/themed'
 
 function Detect() {
   const [imageSource, setImageSource] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<string | null>(null);
 
   const openImagePicker = useCallback(() => {
+    setPrediction(null);
+    setImageSource(null);
     const options = {
       title: 'Select Image',
       selectionLimit: 1,
@@ -25,11 +26,9 @@ function Detect() {
       } else if (response.errorMessage) {
         console.log('ImagePicker Error: ', response.errorMessage);
       } else if (response.assets && response.assets.length > 0) {
-        // Get the first selected image and set it as the image source
-        const selectedImage = response.assets[0];
-        setImageSource(selectedImage.uri as any);
-        // Call function to send image to server for prediction
-        sendImage(selectedImage.uri as any);
+        // const selectedImage = response.assets[0];
+        setImageSource(response.assets[0].uri as any);
+        sendImage(response.assets[0].uri  as any);
       }
     });
   }, []);
@@ -48,14 +47,16 @@ function Detect() {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log(response.data.prediction)
       setPrediction(response.data.prediction);
     } catch (error) {
-      console.error('Error sending image:', error);
+        console.error('Error sending image:', error);
     }
   };
 
   const openCamera = useCallback(() => {
+    setPrediction(null);
+    setImageSource(null);
+
     const options = {
       title: 'Take Picture',
       mediaType: 'photo',
@@ -71,12 +72,9 @@ function Detect() {
       } else if (response.errorMessage) {
         console.log('ImagePicker Error: ', response.errorMessage);
       } else {
-        // Check if assets exist and it's not empty
         if (response.assets && response.assets.length > 0) {
-          const selectedImage = response.assets[0];
-          setImageSource(selectedImage.uri as any);
-          // Call function to send image to server for prediction
-          sendImage(selectedImage.uri as any);
+          setImageSource(response.assets[0].uri as any);
+          sendImage(response.assets[0].uri as any);
         }
       }
     });
@@ -84,17 +82,17 @@ function Detect() {
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      {imageSource && <Image source={{ uri: imageSource }} style={{ width: 200, height: 200, padding: 20}} />}
-      <Text style={{ color: 'black'}}>Prediction: {prediction}</Text>
+      {imageSource && <Image source={{ uri: imageSource }} style={{ width: 200, height: 200, borderRadius: 10, marginBottom: 20 }} />}
+      <Text style={{ color: 'black', fontSize: 18, marginBottom: 20 }}>Prediction: {prediction}</Text>
       
-      <TouchableOpacity onPress={openImagePicker}>
-        <View style={{ backgroundColor: 'blue', padding: 10, borderRadius: 5, marginBottom: 10 }}>
-          <Text style={{ color: 'white' }}>Select Image</Text>
+      <TouchableOpacity onPress={openImagePicker} style={{ marginBottom: 20 }}>
+        <View style={{ backgroundColor: '#3498db', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 }}>
+          <Text style={{ color: 'white', fontSize: 16 }}>Select Image</Text>
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={openCamera}>
-        <View style={{ backgroundColor: 'green', padding: 10, borderRadius: 5 }}>
-          <Text style={{ color: 'white' }}>Open Camera</Text>
+        <View style={{ backgroundColor: '#27ae60', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 }}>
+          <Text style={{ color: 'white', fontSize: 16 }}>Open Camera</Text>
         </View>
       </TouchableOpacity>
     </View>
