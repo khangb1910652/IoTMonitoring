@@ -1,7 +1,9 @@
-import React from 'react';
-import { View, Dimensions, StyleSheet, Text, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Dimensions, StyleSheet, Text, ScrollView, TouchableOpacity, TextInput, Alert, Button } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import MqttService from '../mqtt/mqttService.js';
+import DatePicker from 'react-native-date-picker';
+import { BottomSheet } from '@rneui/themed';
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
@@ -35,6 +37,29 @@ function Monitor() {
   const [fanCountdown, setFanCountdown] = React.useState(3);
   const [lightCountdown, setLightCountdown] = React.useState(3);
 
+  const [time, setTime] = React.useState(new Date()); // Changed state name to "time"
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  const handleOpenDatePicker = () => {
+    setShowDatePicker(true);
+  };
+
+  const handleTimeChange = (newTime: any) => {
+    setTime(newTime); // Updated function name and parameters
+  };
+
+  const handleConfirmTime = () => {
+    setIsVisible(false);
+    const setTimePumpStart = time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    publishMessage("esp/settimestartpump", setTimePumpStart.toString());
+    console.log(setTimePumpStart)
+  };
+
+  const handleCancelTime = () => {
+    setShowDatePicker(false);
+  };
+
   React.useEffect(() => {
     let pumpTimer: string | number | NodeJS.Timeout | undefined;
     if (pumpButtonDisabled) {
@@ -64,7 +89,7 @@ function Monitor() {
     }
     return () => clearTimeout(lightTimer);
   }, [lightButtonDisabled]);
-  
+
   React.useEffect(() => {
     let pumpTimer: string | number | NodeJS.Timeout | undefined;
     if (pumpButtonDisabled) {
@@ -279,6 +304,52 @@ function Monitor() {
             </Text>
           </TouchableOpacity>
 
+          <View style={styles.setTimeContainer}>
+            <Text style={styles.textSetTime}>Set time pump start:</Text>
+
+            <TouchableOpacity style={styles.buttonSetTime} onPress={() => setIsVisible(true)}>
+              <Text style={styles.buttonText}>{time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Text>
+            </TouchableOpacity>
+
+            <BottomSheet containerStyle={styles.bottomSheetContainer} isVisible={isVisible} >
+              <View style={styles.dateTimePickerContainer}>
+                <View style={styles.dateTimePickerWrapper}>
+                  <DatePicker
+                    date={time}
+                    onDateChange={handleTimeChange} // Updated prop name
+                    mode="time"
+                    locale="vi"
+                  />
+                  <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmTime}>
+                    <Text>Confirm</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => setIsVisible(false)}>
+                    <Text>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </BottomSheet>
+          </View>
+
+          <View style={styles.setTimeContainer}>
+            <Text style={styles.textSetTime}>Set threshold:</Text>
+            <TextInput
+              style={styles.input}
+              onChangeText={handleThresholdChange}
+              value={thresholdInput}
+              keyboardType="numeric"
+              placeholder="Temperature">
+            </TextInput>
+            <TouchableOpacity style={styles.buttonSave} onPress={saveThreshold}>
+              <Text style={styles.buttonText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+
+        </View>
+
+        <View style={styles.buttonContainer}>
+
+
           <TouchableOpacity
             style={[styles.button, fanState ? styles.activeButton : null]}
             onPress={() => {
@@ -308,19 +379,9 @@ function Monitor() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text>Set threshold:</Text>
-          <TextInput
-            style={styles.input}
-            onChangeText={handleThresholdChange}
-            value={thresholdInput}
-            keyboardType="numeric"
-            placeholder="Temperature">
-          </TextInput>
-          <TouchableOpacity style={styles.buttonSave} onPress={saveThreshold}>
-            <Text style={styles.buttonText}>Save</Text>
-          </TouchableOpacity>
-        </View>
+
+
+
       </ScrollView>
     </View>
   );
@@ -355,26 +416,31 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   buttonContainer: {
-    flexDirection: 'column',
-    justifyContent: 'space-around',
+    width: screenWidth * 0.9,
+    // flexDirection: 'column',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 10,
+    backgroundColor: '#ffffff',
+    marginBottom: 20,
+    borderRadius: 10,
+    marginLeft: 'auto',
+    marginRight: 'auto'
   },
+
   button: {
     backgroundColor: '#DDDDDD',
     padding: 10,
     marginBottom: 10,
     borderRadius: 5,
-    width: screenWidth * 0.9,
+    width: screenWidth * 0.8,
     alignItems: 'center',
   },
   buttonSave: {
     backgroundColor: '#DDDDDD',
     padding: 10,
     borderRadius: 5,
-    width: screenWidth * 0.2,
-    marginLeft: 10,
-    alignItems: 'center',
+    textAlign: 'right'
   },
   buttonText: {
     fontSize: 16,
@@ -391,13 +457,60 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
-    width: screenWidth * 0.3,
+    width: '30%',
     borderColor: 'gray',
     borderWidth: 1,
     borderRadius: 5,
     paddingLeft: 10,
     paddingRight: 10,
   },
+  dateTimePickerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dateTimePickerWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 20,
+    elevation: 5,
+  },
+  confirmButton: {
+    backgroundColor: '#90EE90', // Green color for Confirm button
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#DDDDDD', // Gray color for Cancel button
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  bottomSheetContainer: {
+    justifyContent: 'center',
+  },
+  setTimeContainer: {
+    padding: 10,
+    // justifyContent: 'center',
+    flexDirection: 'row',
+    width: screenWidth * 0.8,
+    justifyContent: 'space-between'
+  },
+  textSetTime: {
+    fontSize: 16,
+    textAlign: 'left',
+    padding: 10,
+  },
+  buttonSetTime: {
+    backgroundColor: '#90EE90', // Green color for Confirm button
+    padding: 10,
+    borderRadius: 5,
+
+  }
+
 });
 
 export default Monitor;
