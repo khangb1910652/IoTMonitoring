@@ -96,7 +96,6 @@ function Monitor() {
         return require('../assets/sun.png');
     }
   };
-  console.log(getWeatherIcon('mist'))
 
   const renderForecast = () => {
     return forecast.map((item : any, index : any) => (
